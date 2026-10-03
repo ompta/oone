@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Road To OONE - The Muaythai Battle</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: radial-gradient(circle at 50% 30%, #2b1505 0%, #120a02 70%, #060301 100%);
+    color: #f5e6c8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 52px);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ffb84d;
+    text-shadow: 0 0 18px rgba(255, 150, 0, .7), 0 3px 0 #5a2e00;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  h2 {
+    font-size: clamp(14px, 2vw, 20px);
+    letter-spacing: 6px;
+    color: #d9b382;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  #stageSelect { text-align: center; }
+
+  .stageList {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 26px;
+  }
+
+  .stageCard {
+    width: 118px;
+    padding: 14px 10px;
+    border: 2px solid #7a4a1a;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #3a2310, #241407);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+    user-select: none;
+  }
+  .stageCard:hover { transform: translateY(-4px); }
+  .stageCard.active {
+    border-color: #ffb84d;
+    box-shadow: 0 0 18px rgba(255, 184, 77, .55);
+  }
+  .stageCard.locked {
+    opacity: .45;
+    cursor: not-allowed;
+    filter: grayscale(.6);
+  }
+  .stageCard .num { font-size: 12px; color: #caa46e; letter-spacing: 2px; }
+  .stageCard .face { font-size: 34px; margin: 6px 0; }
+  .stageCard .name { font-size: 13px; font-weight: bold; color: #ffd9a0; }
+  .stageCard .limit { font-size: 11px; color: #b99a6e; margin-top: 4px; }
+
+  #arena {
+    width: min(820px, 94vw);
+    border: 2px solid #7a4a1a;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #211307 0%, #160d04 100%);
+    box-shadow: 0 0 40px rgba(0,0,0,.7);
+    padding: 18px;
+    display: none;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .hud .box {
+    flex: 1;
+    background: #0e0803;
+    border: 1px solid #6b451d;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+  .hud .label { font-size: 11px; letter-spacing: 2px; color: #caa46e; text-transform: uppercase; }
+  .hud .value { font-size: 22px; font-weight: bold; color: #ffb84d; margin-top: 2px; }
+
+  #canvasWrap { position: relative; width: 100%; }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 10px;
+    background: #000;
+  }
+
+  #flash {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: #ffffff;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .controls { margin-top: 14px; text-align: center; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 34px;
+    margin: 0 8px;
+    border-radius: 10px;
+    border: 2px solid #8a5a22;
+    background: linear-gradient(180deg, #c47a1e, #7e470f);
+    color: #fff3dd;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s, filter .1s;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 16px rgba(255,160,40,.5); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { filter: grayscale(.7) brightness(.7); cursor: not-allowed; }
+  .btn.attack {
+    font-size: 26px;
+    padding: 20px 70px;
+    background: linear-gradient(180deg, #d93b2b, #7e1408);
+    border-color: #a82818;
+  }
+
+  #hint { margin-top: 10px; font-size: 13px; color: #b99a6e; text-align: center; min-height: 18px; }
+
+  #musicBtn.off {
+    background: linear-gradient(180deg, #555, #333);
+    border-color: #666;
+    color: #bbb;
+  }
+
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.82);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  #overlay .panel {
+    background: linear-gradient(180deg, #2c1a0a, #180e04);
+    border: 2px solid #8a5a22;
+    border-radius: 16px;
+    padding: 34px 44px;
+    text-align: center;
+    max-width: 480px;
+  }
+  #overlay .big { font-size: 34px; font-weight: bold; letter-spacing: 3px; margin-bottom: 10px; }
+  #overlay .big.win { color: #6fdc6f; text-shadow: 0 0 16px rgba(80,255,120,.5); }
+  #overlay .big.lose { color: #ff5f4d; text-shadow: 0 0 16px rgba(255,80,60,.5); }
+  #overlay .detail { color: #d9b382; font-size: 15px; line-height: 1.7; margin-bottom: 22px; }
+</style>
+</head>
+<body>
+
+<h1>Road To OONE</h1>
+<h2>— The Muaythai Battle —</h2>
+
+<div id="stageSelect">
+  <div class="stageList" id="stageList"></div>
+  <div>
+    <button class="btn" id="fightBtn">FIGHT</button>
+    <button class="btn" id="resetBtn">Reset Progress</button>
+    <button class="btn off" id="musicBtn">🔇 Music: OFF</button>
+  </div>
+  <div id="hint">Choose a stage, then press FIGHT. Watch the ring — strike when it flashes!</div>
+</div>
+
+<div id="arena">
+  <div class="hud">
+    <div class="box"><div class="label">Stage</div><div class="value" id="hudStage">1</div></div>
+    <div class="box"><div class="label">Opponent</div><div class="value" id="hudOpponent">Rookie</div></div>
+    <div class="box"><div class="label">Countdown</div><div class="value" id="hudLimit">10.00s</div></div>
+  </div>
+  <div id="canvasWrap">
+    <canvas id="ring" width="800" height="380"></canvas>
+    <div id="flash"></div>
+  </div>
+  <div class="controls">
+    <button class="btn attack" id="attackBtn">ATTACK</button>
+    <button class="btn" id="quitBtn">Back to Select</button>
+  </div>
+  <div id="hint"></div>
+</div>
+
+<div id="overlay">
+  <div class="panel">
+    <div class="big" id="resultTitle"></div>
+    <div class="detail" id="resultDetail"></div>
+    <div>
+      <button class="btn" id="nextBtn">Next Stage</button>
+      <button class="btn" id="retryBtn">Retry</button>
+      <button class="btn" id="menuBtn">Stage Select</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+"use strict";
+
+/* ============================================================
+   GAME DATA
+   5 stages, reaction windows: 2s, 1.5s, 0.4s, 0.3s, 0.1s
+   ============================================================ */
+const STAGES = [
+  { name: "775",            face: "🥊", img: "stage1.png", imgScale: 2, limit: 2.0,  color: "#8fbf4d" },
+  { name: "Never Surrender", face: "🐅", img: "stage2.png", imgScale: 2, limit: 1.5,  color: "#d9a13b" },
+  { name: "DEE",            face: "🐯", img: "DEE.png", imgScale: 2, limit: 0.4,  color: "#e07b28" },
+  { name: "NO Bonus",       face: "👹", img: "stage4.png", imgScale: 2, limit: 0.3, color: "#d94b2b" },
+  { name: "KAICHO",         face: "👑", img: "stage5.png", imgScale: 2, limit: 0.1,  color: "#c93bff" },
+];
+
+const ROUND_SECONDS = 10;   // screen flashes at a random time within this
+const FLASH_MS = 180;       // how long the white flash is visible
+
+/* ---------- state ---------- */
+let currentStage = 0;       // index of selected stage
+let unlocked = loadProgress(); // highest stage index you have unlocked
+
+let phase = "idle";         // idle | waiting | flash | won | lost
+let flashTime = 0;          // performance.now() of the flash start
+let roundStart = 0;         // performance.now() of round start
+let rafId = null;
+let flashTimerId, timeoutId, countdownTimerId, flashTimeoutId;
+
+/* ---------- DOM ---------- */
+const faceImg = { image: null, cache: null, ready: false };
+const $ = id => document.getElementById(id);
+const stageSelect = $("stageSelect");
+const stageListEl = $("stageList");
+const arena = $("arena");
+const canvas = $("ring");
+const ctx = canvas.getContext("2d");
+const flashEl = $("flash");
+const hintEl = $("hint");
+const overlay = $("overlay");
+
+/* ============================================================
+   PROGRESS (localStorage)
+   ============================================================ */
+function loadProgress() {
+  try {
+    const v = parseInt(localStorage.getItem("ore_unlocked") || "0", 10);
+    return isNaN(v) ? 0 : Math.min(4, Math.max(0, v));
+  } catch (e) { return 0; }
+}
+function saveProgress() {
+  try { localStorage.setItem("ore_unlocked", String(unlocked)); } catch (e) {}
+}
+
+/* Battle track per stage index (0-based): stage 4 -> ezyZip.m4a,
+   stage 5 -> stage5.m4a. Other stages use the synthesized loop. */
+const BATTLE_AUDIO = { 3: "ezyZip.m4a", 4: "stage5.m4a" };
+
+
+/* ============================================================
+   MUAY THAI MUSIC — "Mor Pollein" loop, synthesized in Web Audio
+   No external files: a klong (bowl) + roneat (bamboo xylophone)
+   + frame drum groove loop. Browsers block audio until a user
+   gesture, so we arm the AudioContext on first interaction.
+   ============================================================ */
+const Music = (() => {
+  let ctxA = null, master, delay, delayGain, noiseBuf;
+  let step = 0, nextTime = 0, timerId = null;
+  let on = false;
+  let muted = false;
+
+  // base pitch of the klong, and the modal scale (semitone offsets)
+  const KLONG = 196.0; // G3
+  const SCALE = [0, 1, 4, 5, 7, 8, 10, 12, 13, 16, 17, 19]; // Thai-ish modal
+  const k = (n) => KLONG * Math.pow(2, n / 12);
+
+  // 32-step pattern. -1 = rest, else scale index (0..11).
+  const K = [-1,1,-1,1, 1,-1,1,-1, 1,-1,1,1, -1,1,-1,1,  -1,1,-1,1, 1,-1,1,-1, 1,1,-1,1, -1,1,1,-1];
+  const R = [-1,-1,-1,1, -1,-1,2,-1, -1,-1,-1,1, 2,-1,-1,-1,  -1,-1,-1,1, -1,1,-1,-1, 2,-1,-1,1, -1,-1,1,-1];
+  const D = [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,2,0,  1,0,0,1, 0,0,2,0, 1,0,0,1, 0,2,0,2];
+  const STEP = 0.18; // seconds per 8th note (~83 BPM feel)
+
+  function build() {
+    ctxA = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctxA.createGain();
+    master.gain.value = 0.9;
+
+    // feedback echo for a big ring hall
+    delay = ctxA.createDelay(0.6);
+    delay.delayTime.value = STEP * 1.5;
+    delayGain = ctxA.createGain();
+    delayGain.gain.value = 0.28;
+    delay.connect(delayGain);
+    delayGain.connect(delay);
+    delayGain.connect(master);
+
+    // white-noise buffer for drum shakers
+    noiseBuf = ctxA.createBuffer(1, ctxA.sampleRate, ctxA.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+    master.connect(ctxA.destination);
+  }
+
+  // a struck singing bowl / klong
+  function klong(freq, t, vol) {
+    const g = ctxA.createGain();
+    g.gain.setValueAtTime(Math.max(vol, 0.0001), t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    const o1 = ctxA.createOscillator();
+    o1.type = "sine"; o1.frequency.value = freq;
+    const o2 = ctxA.createOscillator();          // beating partial
+    o2.type = "sine"; o2.frequency.value = freq * 2.01;
+    const g2 = ctxA.createGain(); g2.gain.value = 0.3;
+    o1.connect(g); o2.connect(g2); g2.connect(g);
+    g.connect(master); g.connect(delay);
+    o1.start(t); o2.start(t);
+    o1.stop(t + 1.5); o2.stop(t + 1.5);
+  }
+
+  // a plucked bamboo roneat note
+  function roneat(freq, t, vol) {
+    const g = ctxA.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    const o = ctxA.createOscillator();
+    o.type = "triangle"; o.frequency.value = freq;
+    const f = ctxA.createBiquadFilter();
+    f.type = "lowpass"; f.frequency.value = 3200;
+    o.connect(f); f.connect(g); g.connect(master); g.connect(delay);
+    o.start(t); o.stop(t + 0.45);
+  }
+
+  function kick(t, vol) {
+    const g = ctxA.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    const o = ctxA.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(48, t + 0.25);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + 0.35);
+  }
+
+  function shaker(t, vol) {
+    const s = ctxA.createBufferSource();
+    s.buffer = noiseBuf;
+    const f = ctxA.createBiquadFilter();
+    f.type = "highpass"; f.frequency.value = 6000;
+    const g = ctxA.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    s.connect(f); f.connect(g); g.connect(master);
+    s.start(t); s.stop(t + 0.15);
+  }
+
+  function scheduleStep(n, t) {
+    if (K[n]) klong(k(K[n]), t, 0.5);
+    if (R[n]) roneat(k(R[n]) * 2, t, 0.4);
+    if (D[n] === 1) kick(t, 0.6);
+    else if (D[n] === 2) shaker(t, 0.25);
+  }
+
+  function scheduler() {
+    while (nextTime < ctxA.currentTime + 0.2) {
+      scheduleStep(step % 32, nextTime);
+      nextTime += STEP;
+      step++;
+    }
+  }
+
+  async function ensure() {
+    if (!ctxA) build();
+    if (ctxA.state === "suspended") { try { await ctxA.resume(); } catch (e) {} }
+  }
+
+  async function start() {
+    await ensure();
+    if (!on || BATTLE_AUDIO[currentStage]) return; // off, or battle-track stage (ezyZip.m4a / stage5.m4a)
+    if (timerId) return;
+    nextTime = ctxA.currentTime + 0.08;
+    step = 0;
+    timerId = setInterval(scheduler, 40);
+  }
+  function stop() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+  function toggle() {
+    on = !on;
+    if (on) start();
+    else { stop(); BattleMusic.stop(); }
+    updateBtn();
+  }
+  function updateBtn() {
+    const b = $("musicBtn");
+    b.textContent = on ? "🔊 Music: ON" : "🔇 Music: OFF";
+    b.classList.toggle("off", !on);
+  }
+
+  // one-shot SFX
+  function sfx(kind) {
+    if (!ctxA || ctxA.state !== "running" || muted) return;
+    const t = ctxA.currentTime;
+    if (kind === "flash") { klong(k(16), t, 0.8); shaker(t, 0.3); }
+    else if (kind === "hit") { kick(t, 0.8); shaker(t, 0.35); }
+    else if (kind === "win") { [1, 4, 7, 12].forEach((n, i) => roneat(k(n) * 2, t + i * 0.13, 0.5)); }
+    else if (kind === "lose") { [5, 3, 1].forEach((n, i) => klong(k(n) / 2, t + i * 0.22, 0.5)); }
+  }
+
+  // arm audio on the first user interaction anywhere on the page
+  let armed = false;
+  function arm() {
+    if (armed) return; armed = true;
+    if (on) start();
+    document.removeEventListener("pointerdown", arm);
+  }
+  document.addEventListener("pointerdown", arm);
+
+  return { toggle, sfx, updateBtn, isOn: () => on, start, stop };
+})();
+
+/* ============================================================
+    BATTLE MUSIC — per-stage track (ezyZip.m4a / stage5.m4a)
+    Plays during stages listed in BATTLE_AUDIO. Starts when the
+    round begins and stops whenever that round ends.
+    ============================================================ */
+const BattleMusic = (() => {
+  let el = null, file = null;
+  function getEl(f) {
+    if (!el || file !== f) {
+      if (el) { try { el.pause(); el.currentTime = 0; } catch (e) {} }
+      el = new Audio(f);
+      file = f;
+      el.loop = false;
+    }
+    return el;
+  }
+  /* only plays when the music toggle is ON */
+  function start(f) {
+    if (!Music.isOn()) return;
+    const a = getEl(f);
+    try {
+      a.currentTime = 0;
+      const p = a.play();
+      if (p) p.catch(() => {}); // ignore autoplay rejections
+    } catch (e) {}
+  }
+  function stop() {
+    const a = getEl();
+    try {
+      a.pause();
+      a.currentTime = 0;
+    } catch (e) {}
+  }
+  return { start, stop };
+})();
+
+/* ============================================================
+   STAGE SELECT UI
+   ============================================================ */
+function renderStageList() {
+  stageListEl.innerHTML = "";
+  STAGES.forEach((s, i) => {
+    const card = document.createElement("div");
+    card.className = "stageCard"
+      + (i === currentStage ? " active" : "")
+      + (i > unlocked ? " locked" : "");
+    const imgPx = 34 * (s.imgScale || 1);
+    card.innerHTML =
+      `<div class="num">STAGE ${i + 1}</div>
+       <div class="face">${s.img ? '<img src="' + s.img + '" alt="" style="width:' + imgPx + 'px;height:' + imgPx + 'px;object-fit:cover;vertical-align:middle;image-rendering:pixelated">' : s.face}</div>
+       <div class="name">${s.name}</div>
+       <div class="limit">≤ ${s.limit.toFixed(2)}s</div>`;
+    card.addEventListener("click", () => {
+      if (i > unlocked) { hintEl.textContent = "🔒 Locked — beat the previous stage first!"; return; }
+      currentStage = i;
+      hintEl.textContent = "";
+      renderStageList();
+    });
+    stageListEl.appendChild(card);
+  });
+}
+
+$("resetBtn").addEventListener("click", () => {
+  unlocked = 0; currentStage = 0; saveProgress();
+  hintEl.textContent = "Progress reset.";
+  renderStageList();
+});
+
+$("musicBtn").addEventListener("click", Music.toggle);
+
+/* ============================================================
+   FIGHT FLOW
+   ============================================================ */
+$("fightBtn").addEventListener("click", startFight);
+$("attackBtn").addEventListener("click", onAttack);
+$("quitBtn").addEventListener("click", backToMenu);
+$("retryBtn").addEventListener("click", () => {
+  hideOverlay();
+  startFight();
+});
+$("nextBtn").addEventListener("click", () => {
+  hideOverlay();
+  if (currentStage < STAGES.length - 1) { currentStage++; }
+  renderStageList();
+  startFight();
+});
+$("menuBtn").addEventListener("click", backToMenu);
+
+function startFight() {
+  const s = STAGES[currentStage];
+  stageSelect.style.display = "none";
+  arena.style.display = "block";
+  $("hudStage").textContent = currentStage + 1;
+  $("hudOpponent").textContent = s.face + " " + s.name;
+  $("hudLimit").textContent = ROUND_SECONDS.toFixed(2) + "s";
+  $("quitBtn").disabled = false;
+  $("attackBtn").disabled = false;
+  hintEl.textContent = "Round starting… Watch the ring!";
+  flashEl.style.transition = "none";
+  flashEl.style.opacity = "0";
+
+  // stage 4: only ezyZip.m4a, stage 5: only stage5.m4a; other stages: normal music
+  const battleFile = BATTLE_AUDIO[currentStage];
+  if (battleFile) {
+    Music.stop();
+    BattleMusic.start(battleFile);
+  } else {
+    BattleMusic.stop();
+    Music.start();
+  }
+
+  phase = "waiting";
+  roundStart = performance.now();
+
+  if (rafId) cancelAnimationFrame(rafId);
+
+  // random flash time inside the 10s round (1.5s .. 9.5s)
+  const delay = (1.5 + Math.random() * 8) * 1000;
+  flashTimerId = setTimeout(triggerFlash, delay);
+
+  // fail-safe: 10s without a flash -> lost
+  timeoutId = setTimeout(() => {
+    if (phase === "waiting") endFight("timeout");
+    else if (phase === "flash" || phase === "late") endFight("miss");
+  }, ROUND_SECONDS * 1000);
+
+  // countdown display
+  countdownTimerId = setInterval(() => {
+    if (phase !== "waiting") return;
+    const left = Math.max(0, ROUND_SECONDS - (performance.now() - roundStart) / 1000);
+    $("hudLimit").textContent = left.toFixed(2) + "s";
+  }, 50);
+
+  rafId = requestAnimationFrame(drawLoop);
+}
+
+function triggerFlash() {
+  if (phase !== "waiting") return;
+  phase = "flash";
+  flashTime = performance.now();
+  $("attackBtn").disabled = false;
+  hintEl.textContent = "⚡ STRIKE NOW! ⚡";
+  Music.sfx("flash");
+
+  // show the flash instantly, then fade out
+  flashEl.style.transition = "none";
+  flashEl.style.opacity = "1";
+  requestAnimationFrame(() => {
+    flashEl.style.transition = `opacity ${FLASH_MS}ms linear`;
+    flashEl.style.opacity = "0";
+  });
+
+  // if not struck within the stage limit -> enter "late" phase (still can click, but will lose)
+  flashTimeoutId = setTimeout(() => {
+    if (phase === "flash") {
+      phase = "late";
+      hintEl.textContent = "…missed it…";
+    }
+  }, STAGES[currentStage].limit * 1000);
+}
+
+function onAttack() {
+  if (phase === "waiting") {
+    endFight("early");          // attacked before the flash
+  } else if (phase === "flash") {
+    const rt = (performance.now() - flashTime) / 1000;
+    Music.sfx("hit");
+    endFight("win", rt);
+  } else if (phase === "late") {
+    const rt = (performance.now() - flashTime) / 1000;
+    endFight("late", rt);       // attacked after the window closed
+  }
+}
+
+function endFight(outcome, reactionSec) {
+  // stop everything
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  clearTimeout(flashTimerId);
+  clearTimeout(timeoutId);
+  clearTimeout(flashTimeoutId);
+  clearInterval(countdownTimerId);
+  $("attackBtn").disabled = true;
+  BattleMusic.stop();
+  flashEl.style.transition = "none";
+  flashEl.style.opacity = "0";
+
+  phase = "idle";
+  const s = STAGES[currentStage];
+
+  let title, cls, detail;
+  if (outcome === "win") {
+    title = "KNOCKOUT!";
+    cls = "win";
+    if (currentStage < STAGES.length - 1) {
+      unlocked = Math.max(unlocked, currentStage + 1);
+      saveProgress();
+      detail = `You landed it in <b>${reactionSec.toFixed(3)}s</b> (limit ${s.limit.toFixed(2)}s).<br>Next stage unlocked: <b>${STAGES[currentStage + 1].name}</b>!`;
+    } else {
+      detail = `Flawless! <b>${reactionSec.toFixed(3)}s</b> vs the ORE King.<br>You conquered the <b>Road To OONE</b>! 🏆`;
+    }
+  } else if (outcome === "early") {
+    title = "CAUGHT COLD";
+    cls = "lose";
+    detail = "You attacked before the flash — the opponent knocked YOU out.<br>Wait for the flash, then strike.";
+  } else if (outcome === "late") {
+    title = "TOO SLOW";
+    cls = "lose";
+    detail = `You reacted in <b>${reactionSec.toFixed(3)}s</b> — the limit was <b>${s.limit.toFixed(2)}s</b>.<br>The ${s.name} landed the counter.`;
+  } else if (outcome === "miss") {
+    title = "TOO SLOW";
+    cls = "lose";
+    detail = `You had <b>${s.limit.toFixed(2)}s</b> to react and missed the window.<br>The flash was visible for <b>${s.limit.toFixed(2)}s</b> — the ${s.name} landed the counter.`;
+  } else {
+    title = "TIME UP";
+    cls = "lose";
+    detail = "The flash never came in time… round lost.";
+  }
+
+  $("resultTitle").textContent = title;
+  $("resultTitle").className = "big " + cls;
+  $("resultDetail").innerHTML = detail;
+  $("nextBtn").style.display =
+    (outcome === "win" && currentStage < STAGES.length - 1) ? "inline-block" : "none";
+  overlay.style.display = "flex";
+  hintEl.textContent = "";
+  Music.sfx(outcome === "win" ? "win" : "lose");
+
+  // final pose on the canvas
+  drawRing(outcome === "win" ? "won" : "lost");
+}
+
+function backToMenu() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  clearTimeout(flashTimerId);
+  clearTimeout(timeoutId);
+  clearTimeout(flashTimeoutId);
+  clearInterval(countdownTimerId);
+  BattleMusic.stop();
+  overlay.style.display = "none";
+  arena.style.display = "none";
+  stageSelect.style.display = "block";
+  phase = "idle";
+  drawRing("idle");
+  renderStageList();
+}
+
+function hideOverlay() { overlay.style.display = "none"; }
+
+/* ============================================================
+   RING RENDERING (2D canvas, simple fighters)
+   ============================================================ */
+const W = canvas.width, H = canvas.height;
+
+function drawLoop() {
+  drawRing(phase === "waiting" ? "waiting" : "flash");
+  rafId = requestAnimationFrame(drawLoop);
+}
+
+function drawRing(mode) {
+  const s = STAGES[currentStage];
+  const t = performance.now() / 1000;
+
+  ctx.clearRect(0, 0, W, H);
+
+  /* background */
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, "#1a0f06");
+  sky.addColorStop(1, "#0d0703");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  // spotlight
+  const spot = ctx.createRadialGradient(W / 2, H * 0.45, 60, W / 2, H * 0.5, 380);
+  spot.addColorStop(0, "rgba(255,200,110,0.28)");
+  spot.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = spot;
+  ctx.fillRect(0, 0, W, H);
+
+  // floor
+  ctx.fillStyle = "#3a2412";
+  ctx.fillRect(0, H * 0.72, W, H * 0.28);
+  ctx.strokeStyle = "#5a3a1c";
+  ctx.lineWidth = 3;
+  for (let i = 1; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.72 + i * 22);
+    ctx.lineTo(W, H * 0.72 + i * 22);
+    ctx.stroke();
+  }
+
+  // ropes
+  ctx.lineWidth = 5;
+  ["#c9403a", "#e8e0d0", "#3a6fb0"].forEach((c, i) => {
+    ctx.strokeStyle = c;
+    ctx.beginPath();
+    ctx.moveTo(40, H * 0.30 + i * 55);
+    ctx.quadraticCurveTo(W / 2, H * 0.30 + i * 55 + 18, W - 40, H * 0.30 + i * 55);
+    ctx.stroke();
+  });
+
+  /* player (left, red shorts) */
+  const bob = Math.sin(t * 3) * 3;
+  drawFighter(W * 0.28, H * 0.52 + bob, "#c0392b", "#ffd9a0", false);
+
+  /* opponent (right) */
+  const ox = W * 0.72;
+  let oy = H * 0.52 + bob;
+  let shake = 0;
+  if (mode === "won" || mode === "lost") shake = 6 * Math.sin(t * 40);
+  if (mode === "won") { oy += 34; }  // opponent slumps when you win
+  drawFighter(ox + shake, oy, s.color, "#e8c39e", mode === "won");
+
+  // face above opponent's head (image icon for stages that have one)
+  if (s.img) {
+    if (faceImg.cache === s.img) {
+      if (faceImg.ready) {
+        const sz = 52 * (s.imgScale || 1);
+        ctx.drawImage(faceImg.image, ox - sz / 2, oy - 88 - sz, sz, sz);
+      }
+    } else {
+      faceImg.cache = s.img;
+      faceImg.image = new Image();
+      faceImg.image.src = s.img;
+      faceImg.image.onload = () => { faceImg.ready = true; };
+      faceImg.image.onerror = () => { faceImg.ready = false; };
+    }
+  } else {
+    faceImg.cache = null; faceImg.ready = false;
+    ctx.font = "42px serif";
+    ctx.textAlign = "center";
+    ctx.fillText(s.face, ox, oy - 92);
+  }
+
+  /* status text */
+  ctx.font = "bold 22px 'Segoe UI'";
+  ctx.textAlign = "center";
+  if (mode === "waiting") {
+    ctx.fillStyle = "#d9b382";
+    ctx.fillText("Wait for the flash…", W / 2, 40);
+  } else if (mode === "flash") {
+    ctx.fillStyle = "#ffe14d";
+    ctx.fillText("⚡ NOW! STRIKE! ⚡", W / 2, 40);
+  } else if (mode === "idle") {
+    ctx.fillStyle = "#d9b382";
+    ctx.fillText(`${s.face}  ${s.name}  —  reaction limit ${s.limit.toFixed(2)}s`, W / 2, 40);
+  }
+}
+
+/* simple fighter: head + body + arms in a guard */
+function drawFighter(x, y, shortColor, skin, down) {
+  ctx.save();
+  if (down) { ctx.translate(0, 12); ctx.globalAlpha = 0.85; }
+
+  // legs
+  ctx.strokeStyle = skin;
+  ctx.lineWidth = 9;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x - 12, y + 45); ctx.lineTo(x - 4, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + 12, y + 45); ctx.lineTo(x + 4, y); ctx.stroke();
+
+  // shorts
+  ctx.fillStyle = shortColor;
+  ctx.fillRect(x - 16, y - 6, 32, 20);
+
+  // torso
+  ctx.strokeStyle = skin;
+  ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, y - 42); ctx.stroke();
+
+  // arms in guard
+  ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(x, y - 38); ctx.lineTo(x + 18, y - 30); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - 38); ctx.lineTo(x + 18, y - 42); ctx.stroke();
+
+  // head
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(x, y - 56, 13, 0, Math.PI * 2); ctx.fill();
+
+  // headband
+  ctx.strokeStyle = shortColor;
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(x, y - 56, 13, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ============================================================
+   KEYBOARD: Space = attack
+   ============================================================ */
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+    if (arena.style.display === "block" && $("attackBtn").disabled === false) {
+      onAttack();
+    }
+  }
+});
+
+/* init */
+renderStageList();
+</script>
+</body>
+</html>
+
+
+
