@@ -229,11 +229,11 @@
    5 stages, reaction windows: 2s, 1.5s, 0.4s, 0.3s, 0.1s
    ============================================================ */
 const STAGES = [
-  { name: "775",            face: "🥊", img: "stage1.png", imgScale: 2, limit: 2.0,  color: "#8fbf4d" },
-  { name: "Never Surrender", face: "🐅", img: "stage2.png", imgScale: 2, limit: 1.5,  color: "#d9a13b" },
-  { name: "DEE",            face: "🐯", img: "DEE.png", imgScale: 2, limit: 0.4,  color: "#e07b28" },
-  { name: "NO Bonus",       face: "👹", img: "stage4.png", imgScale: 2, limit: 0.3, color: "#d94b2b" },
-  { name: "KAICHO",         face: "👑", img: "stage5.png", imgScale: 2, limit: 0.1,  color: "#c93bff" },
+  { name: "775",             img: "stage1.png", imgScale: 2, limit: 2.0,  color: "#8fbf4d" },
+  { name: "Never Surrender", img: "stage2.png", imgScale: 2, limit: 1.5,  color: "#d9a13b" },
+  { name: "DEE",             img: "DEE.png",    imgScale: 2, limit: 0.4,  color: "#e07b28" },
+  { name: "NO Bonus",        img: "stage4.png", imgScale: 2, limit: 0.3,  color: "#d94b2b" },
+  { name: "KAICHO",          img: "stage5.png", imgScale: 2, limit: 0.1,  color: "#c93bff" },
 ];
 
 const ROUND_SECONDS = 10;   // screen flashes at a random time within this
@@ -484,14 +484,18 @@ function renderStageList() {
   stageListEl.innerHTML = "";
   STAGES.forEach((s, i) => {
     const card = document.createElement("div");
+    const locked = i > unlocked;
     card.className = "stageCard"
       + (i === currentStage ? " active" : "")
-      + (i > unlocked ? " locked" : "");
+      + (locked ? " locked" : "");
     const imgPx = 34 * (s.imgScale || 1);
+    const faceHtml = locked
+      ? '<span style="font-size:48px;font-weight:800;color:#9a8a6a">?</span>'
+      : `<img src="${s.img}" alt="" style="width:${imgPx}px;height:${imgPx}px;object-fit:cover;vertical-align:middle;image-rendering:pixelated">`;
     card.innerHTML =
       `<div class="num">STAGE ${i + 1}</div>
-       <div class="face">${s.img ? '<img src="' + s.img + '" alt="" style="width:' + imgPx + 'px;height:' + imgPx + 'px;object-fit:cover;vertical-align:middle;image-rendering:pixelated">' : s.face}</div>
-       <div class="name">${s.name}</div>
+       <div class="face">${faceHtml}</div>
+       <div class="name">${locked ? "?" : s.name}</div>
        <div class="limit">≤ ${s.limit.toFixed(2)}s</div>`;
     card.addEventListener("click", () => {
       if (i > unlocked) { hintEl.textContent = "🔒 Locked — beat the previous stage first!"; return; }
@@ -534,7 +538,7 @@ function startFight() {
   stageSelect.style.display = "none";
   arena.style.display = "block";
   $("hudStage").textContent = currentStage + 1;
-  $("hudOpponent").textContent = s.face + " " + s.name;
+  $("hudOpponent").textContent = s.name;
   $("hudLimit").textContent = ROUND_SECONDS.toFixed(2) + "s";
   $("quitBtn").disabled = false;
   $("attackBtn").disabled = false;
@@ -769,9 +773,6 @@ function drawRing(mode) {
     }
   } else {
     faceImg.cache = null; faceImg.ready = false;
-    ctx.font = "42px serif";
-    ctx.textAlign = "center";
-    ctx.fillText(s.face, ox, oy - 92);
   }
 
   /* status text */
@@ -785,7 +786,7 @@ function drawRing(mode) {
     ctx.fillText("⚡ NOW! STRIKE! ⚡", W / 2, 40);
   } else if (mode === "idle") {
     ctx.fillStyle = "#d9b382";
-    ctx.fillText(`${s.face}  ${s.name}  —  reaction limit ${s.limit.toFixed(2)}s`, W / 2, 40);
+    ctx.fillText(`${s.name}  —  reaction limit ${s.limit.toFixed(2)}s`, W / 2, 40);
   }
 }
 
