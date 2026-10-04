@@ -174,6 +174,20 @@
   #overlay .big.win { color: #6fdc6f; text-shadow: 0 0 16px rgba(80,255,120,.5); }
   #overlay .big.lose { color: #ff5f4d; text-shadow: 0 0 16px rgba(255,80,60,.5); }
   #overlay .detail { color: #d9b382; font-size: 15px; line-height: 1.7; margin-bottom: 22px; }
+
+  #nextOpponent { margin: 0 auto 16px; text-align: center; }
+  #nextOpponent .label {
+    font-size: 11px; letter-spacing: 3px; color: #caa46e;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  #nextOpponent img {
+    object-fit: cover;
+    image-rendering: pixelated;
+    border: 2px solid #8a5a22;
+    border-radius: 10px;
+    background: #0e0803;
+    box-shadow: 0 0 18px rgba(255, 184, 77, .55);
+  }
 </style>
 </head>
 <body>
@@ -211,6 +225,7 @@
 <div id="overlay">
   <div class="panel">
     <div class="big" id="resultTitle"></div>
+    <div id="nextOpponent"></div>
     <div class="detail" id="resultDetail"></div>
     <div>
       <button class="btn" id="nextBtn">Next Stage</button>
@@ -666,6 +681,21 @@ function endFight(outcome, reactionSec) {
   $("resultTitle").textContent = title;
   $("resultTitle").className = "big " + cls;
   $("resultDetail").innerHTML = detail;
+
+  /* show the next opponent's face in the KNOCKOUT popup */
+  const nextOpp = $("nextOpponent");
+  if (outcome === "win" && currentStage < STAGES.length - 1) {
+    const ns = STAGES[currentStage + 1];
+    const px = 42 * (ns.imgScale || 1);
+    nextOpp.innerHTML =
+      `<div class="label">Next Opponent</div>` +
+      `<img src="${ns.img}" alt="${ns.name}" style="width:${px}px;height:${px}px">`;
+    nextOpp.style.display = "block";
+  } else {
+    nextOpp.innerHTML = "";
+    nextOpp.style.display = "none";
+  }
+
   $("nextBtn").style.display =
     (outcome === "win" && currentStage < STAGES.length - 1) ? "inline-block" : "none";
   overlay.style.display = "flex";
